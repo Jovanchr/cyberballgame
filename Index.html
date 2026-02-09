@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cyberball Simulation</title>
+<style>
+  body { font-family: Arial, sans-serif; text-align: center; background: #f0f0f0; margin: 0; padding: 20px; }
+  #gameArea { position: relative; width: 100%; max-width: 400px; height: 400px; margin: 0 auto; background: #fff; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+  .player { width: 60px; height: 60px; border-radius: 50%; background: #3498db; position: absolute; display: flex; align-items: center; justify-content: center; color: #fff; font-weight: bold; cursor: pointer; }
+  #participant { background: #e74c3c; }
+  #ball { width: 20px; height: 20px; border-radius: 50%; background: orange; position: absolute; top: 190px; left: 190px; transition: all 0.5s ease; }
+  #message { margin-top: 20px; font-size: 18px; }
+  button { padding: 10px 20px; font-size: 16px; margin-top: 20px; display: none; }
+</style>
+</head>
+<body>
+
+<h2>Cyberball Game</h2>
+<p>Click your circle when you have the ball. Then choose where to throw it!</p>
+<div id="gameArea">
+  <div id="participant" class="player" style="bottom: 20px; left: 170px;">You</div>
+  <div id="player1" class="player" style="top: 20px; left: 50px;">P1</div>
+  <div id="player2" class="player" style="top: 20px; right: 50px;">P2</div>
+  <div id="ball"></div>
+</div>
+<p id="message"></p>
+<button id="finish" onclick="finishGame()">Finish Game</button>
+
+<script>
+// Randomly assign inclusion/exclusion
+let condition = Math.random() < 0.5 ? 'include' : 'exclude';
+console.log("Condition:", condition);
+
+// Game variables
+let tosses = 0;
+let maxTosses = 30;
+let ballOwner = 'participant'; // starts with participant
+let gameArea = document.getElementById('gameArea');
+let ball = document.getElementById('ball');
+let message = document.getElementById('message');
+let finishBtn = document.getElementById('finish');
+let players = ['participant','player1','player2'];
+
+// Function to move ball to a player
+function moveBall(toPlayer){
+    let el = document.getElementById(toPlayer);
+    let rect = el.getBoundingClientRect();
+    let container = gameArea.getBoundingClientRect();
+    let x = rect.left - container.left + rect.width/2 - 10;
+    let y = rect.top - container.top + rect.height/2 - 10;
+    ball.style.left = x + "px";
+    ball.style.top = y + "px";
+}
+
+// Function for computer to toss ball
+function computerToss(){
+    tosses++;
+    if(tosses >= maxTosses){
+        endGame();
+        return;
+    }
+
+    let nextOwner = '';
+    if(condition === 'include'){
+        nextOwner = players[Math.floor(Math.random()*players.length)];
+    } else if(condition === 'exclude'){
+        if(ballOwner === 'participant' && tosses <= 5){
+            nextOwner = 'participant';
+        } else {
+            nextOwner = players.filter(p=>p!=='participant')[Math.floor(Math.random()*2)];
+        }
+    }
+
+    ballOwner = nextOwner;
+    moveBall(nextOwner);
+
+    if(nextOwner === 'participant'){
+        message.textContent = "It's your turn! Click your circle.";
+        document.getElementById('participant').style.pointerEvents = 'auto';
+    } else {
+        message.textContent = nextOwner + " has the ball...";
+        setTimeout(computerToss, 1000);
+    }
+}
+
+// Function when participant has the ball
+function participantTurn(){
+    message.textContent = "Click a player to throw the ball!";
+    // Enable clicking on other players
+    ['player1','player2'].forEach(p=>{
+        document.getElementById(p).style.pointerEvents = 'auto';
+        document.getElementById(p).addEventListener('click', playerClick);
+    });
+}
+
+// Handle player click
+function playerClick(e){
+    // Disable other players clicks
+    ['player1','player2'].forEach(p=>{
+        document.getElementById(p).style.pointerEvents = 'none';
+        document.getElementById(p).removeEventListener('click', playerClick);
+    });
+
+    ballOwner = e.target.id;
+    moveBall(ballOwner);
+    tosses++;
+    if(tosses >= maxTosses){
+        endGame();
+        return;
+    }
+
+    setTimeout(computerToss, 1000);
+}
+
+// Participant circle click
+document.getElementById('participant').addEventListener('click', ()=>{
+    document.getElementById('participant').style.pointerEvents = 'none';
+    participantTurn();
+});
+
+// End game
+function endGame(){
+    message.textContent = "Game over!";
+    ball.style.display = 'none';
+    finishBtn.style.display = 'inline-block';
+}
+
+function finishGame(){
+    message.textContent = "Thank you! You can now return to the survey.";
+}
+
+// Start game
+moveBall('participant');
+message.textContent = "It's your turn! Click your circle.";
+document.getElementById('participant').style.pointerEvents = 'auto';
+</script>
+
+</body>
+</html>
